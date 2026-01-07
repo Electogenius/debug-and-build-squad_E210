@@ -33,7 +33,7 @@ export default function App() {
   const [user, setUser] = useState<any | null>(getUser());
 
   useEffect(() => {
-    fetch("http://localhost:8000/scores")
+    fetch("http://10.12.80.125:8000/scores")
       .then(res => res.json())
       .then(json => {
         // Ensure data is an array
