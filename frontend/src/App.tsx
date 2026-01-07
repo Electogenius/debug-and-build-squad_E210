@@ -56,24 +56,60 @@ export default function App() {
         <h1>ThirdEye — Impact vs Visibility</h1>
         <p>🔴 Red dots = Silent Architects</p>
 
-        <ScatterChart width={700} height={500}>
-          <CartesianGrid />
-          <XAxis dataKey="visibility" name="Visibility" />
-          <YAxis dataKey="impact" name="Impact" />
-          <Tooltip />
+        <ScatterChart
+  width={700}
+  height={500}
+  margin={{ top: 20, right: 30, bottom: 60, left: 60 }}
+>
+  <CartesianGrid strokeDasharray="3 3" />
 
-          <Scatter
-            data={data.filter(d => !d.silent_architect)}
-            fill="#8884d8"
-            onClick={(d) => setSelected(d as Person)}
-          />
+  <XAxis
+    type="number"
+    dataKey="visibility"
+    name="Visibility"
+    label={{
+      value: "Visibility (Reviews + Comments)",
+      position: "bottom",
+      offset: 30
+    }}
+    domain={[0, "dataMax + 10"]}
+  />
 
-          <Scatter
-            data={data.filter(d => d.silent_architect)}
-            fill="red"
-            onClick={(d) => setSelected(d as Person)}
-          />
-        </ScatterChart>
+  <YAxis
+    type="number"
+    dataKey="impact"
+    name="Impact"
+    label={{
+      value: "Engineering Impact",
+      angle: -90,
+      position: "left",
+      offset: 40
+    }}
+    domain={[0, "dataMax + 10"]}
+  />
+
+  <Tooltip
+    cursor={{ strokeDasharray: "3 3" }}
+    formatter={(value, name) => [
+      typeof value === "number" ? value.toFixed(1) : value,
+      name
+    ]}
+    labelFormatter={() => "Contributor"}
+  />
+
+  <Scatter
+    data={data.filter(d => !d.silent_architect)}
+    fill="#8884d8"
+    onClick={(d) => setSelected(d as Person)}
+  />
+
+  <Scatter
+    data={data.filter(d => d.silent_architect)}
+    fill="red"
+    onClick={(d) => setSelected(d as Person)}
+  />
+</ScatterChart>
+
       </div>
 
       {/* Evidence Panel */}
