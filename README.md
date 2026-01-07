@@ -1,2 +1,3 @@
-# Hacktide-debug-and-build-squad
+# ThirdEye
+
 [todo fill description]

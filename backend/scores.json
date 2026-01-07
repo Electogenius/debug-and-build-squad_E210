@@ -1,0 +1,58 @@
+[
+  {
+    "author": "YuriiMotov",
+    "files_changed": 217,
+    "additions": 10807,
+    "deletions": 460,
+    "reviews": 6,
+    "comments": 7,
+    "execution": 243.67099946120163,
+    "impact": 151.89999999999998,
+    "visibility": 19,
+    "total": 184.4954997306008,
+    "percentile": 75.0,
+    "silent_architect": false
+  },
+  {
+    "author": "nilslindemann",
+    "files_changed": 12,
+    "additions": 34,
+    "deletions": 182,
+    "reviews": 0,
+    "comments": 6,
+    "execution": 20.283999304248525,
+    "impact": 8.4,
+    "visibility": 6,
+    "total": 14.101999652124261,
+    "percentile": 50.0,
+    "silent_architect": false
+  },
+  {
+    "author": "paras-verma7454",
+    "files_changed": 1,
+    "additions": 1,
+    "deletions": 1,
+    "reviews": 0,
+    "comments": 3,
+    "execution": 2.09861228866811,
+    "impact": 0.7,
+    "visibility": 3,
+    "total": 1.629306144334055,
+    "percentile": 25.0,
+    "silent_architect": false
+  },
+  {
+    "author": "tiangolo",
+    "files_changed": 1346,
+    "additions": 11003,
+    "deletions": 30580,
+    "reviews": 20,
+    "comments": 50,
+    "execution": 1483.185028531645,
+    "impact": 942.1999999999999,
+    "visibility": 90,
+    "total": 1127.4725142658226,
+    "percentile": 100.0,
+    "silent_architect": false
+  }
+]
