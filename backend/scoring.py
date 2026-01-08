@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 import uvicorn
+import psycopg
 
 app = FastAPI()
 
@@ -29,9 +30,10 @@ conn_info = {
 # -----------------------
 # Load & process CSV
 # -----------------------
-def calculate_scores():
+def calculate_scores(team:str=None):
     df = pd.read_csv("raw_data.csv")  # author, files_changed, additions, deletions, reviews, comments
 
+    if team: df = df[df["author"].isin(team.split(','))]
     # --- PR metrics ---
     df["code_leverage"] = np.log1p(df["additions"] + df["deletions"]) * np.log1p(df["files_changed"])
     df["review_influence"] = df["reviews"] * 1.5
@@ -78,10 +80,10 @@ def calculate_scores():
         (scores["visibility_combined"] <= vis_40)
     )
 
-    impact_40 = scores["impact_combined"].quantile(0.5)
+    impact_50 = scores["impact_combined"].quantile(0.5)
     vis_75 = scores["visibility_combined"].quantile(0.75)
     scores["loud_executor"] = (
-        (scores["impact_combined"] <= impact_40) &
+        (scores["impact_combined"] <= impact_50) &
         (scores["visibility_combined"] >= vis_75)
     )
 
@@ -165,12 +167,26 @@ def write_to_db(scores):
                     )
                 )
 
+def get_team(team_lead):
+    if not team_lead:
+        return None
+    SQL = "SELECT members FROM teams WHERE team_lead = %s;"
+    with psycopg.connect(**conn_info) as conn:
+        with conn.cursor() as cur:
+            cur.execute(SQL, (team_lead,))
+            row = cur.fetchone()
+            if not row:
+                return ""
+            members_text = row[0]  # single column
+    # split on commas, strip whitespace, filter out empty strings
+    return members_text
+
 # -----------------------
 # API endpoint
 # -----------------------
 @app.get("/scores")
-def get_scores():
-    scores = calculate_scores()
+def get_scores(team_lead = None):
+    scores = calculate_scores(get_team(team_lead))
     write_to_db(scores)
     # Convert to list of dicts for JSON
     return scores.to_dict(orient="records")

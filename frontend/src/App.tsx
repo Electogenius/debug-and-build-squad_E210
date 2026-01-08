@@ -33,6 +33,7 @@ type Person = {
   improvement_suggestions?: string;
   evidence: Evidence;
   loud_executor: boolean;
+  all: any;
 };
 
 /* =======================
@@ -45,16 +46,13 @@ export default function App() {
   const [user, setUser] = useState<any | null>(getUser());
   const [filter, setFilter] = useState<"all" | "silent" | "loud">("all");
 
-  /* =======================
-     Fetch data
-  ======================= */
-
-  useEffect(() => {
-    fetch("http://10.12.80.125:8000/scores")
+  // fetch function
+  const loadData = (usr: any) => {
+    if (!usr) return;
+    fetch("http://10.12.80.125:8000/scores?team_lead=" + usr.username)
       .then(res => res.json())
       .then(json => {
         const arr = Array.isArray(json) ? json : json.scores;
-        console.log(arr)
         const normalized: Person[] = arr.map((p: any) => ({
           author: p.author || "Unknown",
           execution: p.execution,
@@ -71,17 +69,18 @@ export default function App() {
             reviews: p.reviews,
             comments: p.comments
           },
-          loud_executor: !!p.loud_executor
+          loud_executor: !!p.loud_executor,
+          all: p
         }));
 
         setData(normalized);
       })
       .catch(err => console.error("Fetch error:", err));
-  }, []);
+  };
 
-  /* =======================
-     Auth
-  ======================= */
+  useEffect(() => {
+    loadData(user);
+  }, [user]); // re-run when user changes
 
   function handleLogout() {
     logout();
@@ -89,7 +88,12 @@ export default function App() {
   }
 
   if (!user) {
-    return <AuthPage onLogin={() => setUser(getUser())} />;
+    // call setUser and reload data after login
+    return <AuthPage onLogin={() => {
+      const u = getUser();
+      setUser(u);
+      loadData(u);
+    }} />;
   }
 
   /* =======================
@@ -108,8 +112,10 @@ export default function App() {
      Render
   ======================= */
 
+  document.body.style.margin = '0'
+
   return (
-    <div style={{ padding: 20, background: darkBg, minHeight: "100vh", color: textColor, fontFamily: "sans-serif" }}>
+    <div style={{ padding: 40, background: darkBg, minHeight: "100vh", color: textColor, fontFamily: "sans-serif", boxSizing: 'border-box'}}>
       {/* Header */}
       <div
         style={{
@@ -221,7 +227,7 @@ export default function App() {
               labelFormatter={() => "Contributor"}
             />
 
-            {["all", "normal"].includes(filter) && (
+            {["all"].includes(filter) && (
               <Scatter
                 data={data.filter(d => !d.silent_architect && !d.loud_executor)}
                 fill={"#fff"}
@@ -278,6 +284,8 @@ export default function App() {
             <p><b>Visibility:</b> {selected.visibility.toFixed(1)}</p>
             <p><b>Total Score:</b> {selected.total}</p>
             <p><b>Percentile:</b> {selected.percentile}%</p>
+            <p><b>Slack Impact:</b> {selected.all.impact_slack}</p>
+            <p><b>Slack Visibility:</b> {selected.all.visibility_slack}</p>
 
             {selected.percentile !== undefined && (
               <p>
@@ -293,7 +301,7 @@ export default function App() {
                 <p style={{ color: textColor }}>
                   🧩 Files: {e.files_changed} <br />
                   ➕ +{e.additions} / ➖ -{e.deletions} <br />
-                  💬 Reviews: {e.reviews}, Comments: {e.comments}
+                  💬 Reviews: {e.reviews}, Comments: {e.comments} <br />
                 </p>
               </div>
             ))}
