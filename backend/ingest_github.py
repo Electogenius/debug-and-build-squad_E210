@@ -7,13 +7,13 @@ auth = Auth.Token(os.getenv("GITHUB_TOKEN"))
 
 g = Github(auth=auth)
 
-REPO = "fastapi/fastapi"
+REPO = "encode/httpx"
 
 repo = g.get_repo(REPO)
 
 rows = []
 
-for pr in repo.get_pulls(state="closed")[:50]:
+for pr in repo.get_pulls(state="closed")[:100]:
     if not pr.merged or not pr.user:
         continue
 
