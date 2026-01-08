@@ -7,11 +7,12 @@ The manager dashboard visualizes Perceived Activity vs. Actual Impact, surfaces 
 ## Running frontend
 
 ```
+cd ./frontend/
 npm start
 ```
 
 ## Running backend
 
 ```
-uvicorn api:app --reload --host 0.0.0.0
+python3 ./backend/backend.py
 ```
