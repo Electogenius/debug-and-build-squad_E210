@@ -224,6 +224,80 @@ def get_scores(team_lead = None):
     # Convert to list of dicts for JSON
     return scores.to_dict(orient="records")
 
+def average_team_scores(team_lead: str):
+    # Get member list string from DB and compute scores for those members
+    members_text = get_team(team_lead)
+    if not members_text:
+        return []
+
+    # members_text is expected as comma-separated names; reuse calculate_scores by passing team string
+    scores = calculate_scores(members_text)
+    if scores.empty:
+        return []
+
+    # Numeric columns to average (keep same keys as scores table)
+    avg_row = {}
+
+    # For boolean and text fields we will pick aggregated sensible defaults:
+    # - For boolean flags (silent_architect, loud_executor) use any() -> True if any member has it.
+    # - For improvement_suggestions concatenate unique suggestions separated by " • ".
+    numeric_cols = [
+        "execution", "impact_pr", "visibility_pr", "impact_slack", "visibility_slack",
+        "impact_combined", "visibility_combined", "total", "percentile",
+        "files_changed", "additions", "deletions", "reviews", "comments"
+    ]
+
+    # Some of these numeric cols may not exist in the aggregated scores frame (files_changed etc. were dropped earlier).
+    for c in numeric_cols:
+        if c in scores.columns:
+            avg_row[c] = float(scores[c].mean())
+        else:
+            # skip missing columns
+            pass
+
+    # Booleans
+    for b in ["silent_architect", "loud_executor"]:
+        if b in scores.columns:
+            avg_row[b] = bool(scores[b].any())
+
+    # For author, use team_lead as identifier or "team:{lead}"
+    avg_row["author"] = f"team:{team_lead}"
+
+    # improvement_suggestions: unique concatenation
+    # if "improvement_suggestions" in scores.columns:
+    #     uniques = [s for s in scores["improvement_suggestions"].unique() if s and isinstance(s, str)]
+    #     avg_row["improvement_suggestions"] = " • ".join(uniques) if uniques else ""
+
+    # Ensure all keys expected by DB/table are present (set defaults when missing)
+    expected_keys = [
+        "author", "execution", "impact_pr", "visibility_pr",
+        "impact_slack", "visibility_slack", "impact_combined", "visibility_combined",
+        "total", "percentile", "silent_architect", "improvement_suggestions", "loud_executor"
+    ]
+    for k in expected_keys:
+        if k not in avg_row:
+            # sensible defaults
+            if k in ["silent_architect", "loud_executor"]:
+                avg_row[k] = False
+            elif k == "author":
+                avg_row[k] = f"team:{team_lead}"
+            elif k == "improvement_suggestions":
+                avg_row[k] = ""
+            else:
+                avg_row[k] = 0.0
+
+    # Return as list with single dict to match scores.to_dict(orient="records")
+    return [avg_row]
+
+
+@app.get("/team_average")
+def get_team_average(team_lead: str = None):
+    if not team_lead:
+        return []
+
+    avg = average_team_scores(team_lead)
+    return avg
+
 # -----------------------
 # Run server
 # -----------------------
