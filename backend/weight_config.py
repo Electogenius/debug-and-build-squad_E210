@@ -1,0 +1,44 @@
+# Weights and constants to be adjusted as per company priorities
+
+
+LOG_OFFSET = 1  # used in np.log1p
+CODE_LEVERAGE_ADD_DEL_MULT = 1.0  # multiplier for additions+deletions (kept explicit)
+CODE_LEVERAGE_FILES_MULT = 1.0  # multiplier for files_changed inside log1p (kept explicit)
+
+REVIEW_INFLUENCE_MULTIPLIER = 1.5
+
+IMPACT_PR_WEIGHT_CODE_LEVERAGE = 0.7
+IMPACT_PR_WEIGHT_REVIEW_INFLUENCE = 0.3
+
+VISIBILITY_PR_WEIGHT_REVIEW = 1.0
+VISIBILITY_PR_WEIGHT_COMMENTS = 0.5
+
+# Slack proxies thresholds and multipliers
+REVIEWS_DECISION_PROXY_THRESHOLD = 2
+UNBLOCK_FILES_CHANGED_MAX = 5
+UNBLOCK_DELETIONS_GREATER_THAN_ADDITIONS = True  # boolean flag to indicate criterion
+OWNERSHIP_FILES_CHANGED_THRESHOLD = 10
+
+IMPACT_SLACK_WEIGHT_UNBLOCK = 0.5
+IMPACT_SLACK_WEIGHT_OWNERSHIP = 0.3
+
+VISIBILITY_SLACK_WEIGHT_DECISION = 0.7
+VISIBILITY_SLACK_WEIGHT_COMMENTS = 0.3
+
+# Aggregation / total scoring weights
+EXECUTION_LOG_OFFSET = 1  # same as LOG_OFFSET, named for execution metric
+EXECUTION_FILES_WEIGHT = 1.0  # files_changed added directly to execution
+
+TOTAL_WEIGHT_EXECUTION = 0.5
+TOTAL_WEIGHT_IMPACT_COMBINED = 0.4
+TOTAL_WEIGHT_VISIBILITY_COMBINED = 0.1
+
+# Percentile multipliers
+PERCENTILE_SCALE = 100.0
+
+# Silent architect / loud executor quantiles
+SILENT_ARCHITECT_IMPACT_QUANTILE = 0.75
+SILENT_ARCHITECT_VISIBILITY_QUANTILE = 0.40
+
+LOUD_EXECUTOR_IMPACT_QUANTILE = 0.50
+LOUD_EXECUTOR_VISIBILITY_QUANTILE = 0.75
