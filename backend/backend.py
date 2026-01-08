@@ -250,7 +250,10 @@ def average_team_scores(team_lead: str):
     # Some of these numeric cols may not exist in the aggregated scores frame (files_changed etc. were dropped earlier).
     for c in numeric_cols:
         if c in scores.columns:
-            avg_row[c] = float(scores[c].mean())
+            if c in 'files_changed additions deletions reviews comments'.split():
+                avg_row[c] = float(scores[c].sum())
+            else:
+                avg_row[c] = float(scores[c].mean())
         else:
             # skip missing columns
             pass
@@ -297,6 +300,24 @@ def get_team_average(team_lead: str = None):
 
     avg = average_team_scores(team_lead)
     return avg
+
+
+def list_team_leads():
+    """Return a list of team_lead names from the teams table."""
+    SQL = "SELECT DISTINCT team_lead FROM teams;"
+    leads = []
+    with psycopg.connect(**conn_info) as conn:
+        with conn.cursor() as cur:
+            cur.execute(SQL)
+            rows = cur.fetchall()
+            if rows:
+                leads = [r[0] for r in rows if r[0] is not None]
+    return leads
+
+@app.get("/team_leads")
+def get_team_leads():
+    return list_team_leads()
+
 
 # -----------------------
 # Run server
