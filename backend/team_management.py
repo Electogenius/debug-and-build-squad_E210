@@ -58,8 +58,10 @@ def main():
     try:
         create_table(conn)
         # Example inserts
-        tid1 = add_team(conn, "Ockmore", ["GreyElaina", "Danarvelini", "chailandau"], 'core-team')
-        tid2 = add_team(conn, "Ectogen", ["lovelydinosaur", "agronholm", "thejcannon", "emmanuel-ferdman"], "team-123")
+        add_team(conn, "Ockmore", ["GreyElaina", "Danarvelini", "chailandau"], 'core-team')
+        add_team(conn, "Ectogen", ["lovelydinosaur", "agronholm", "thejcannon", "emmanuel-ferdman"], "team-123")
+        add_team(conn, "Example", ["Zproger", "agronholm", "Zaczero"], "team-234")
+        
         teams = list_teams(conn)
         for t in teams:
             print(f"team_id={t['team_id']}, lead={t['team_lead']}, members={t['members']}")

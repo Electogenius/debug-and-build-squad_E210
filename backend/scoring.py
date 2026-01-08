@@ -30,22 +30,51 @@ conn_info = {
 # -----------------------
 # Load & process CSV
 # -----------------------
-def calculate_scores(team:str=None):
+import numpy as np
+import pandas as pd
+from weight_config import *
+
+def calculate_scores(team: str = None):
     df = pd.read_csv("raw_data.csv")  # author, files_changed, additions, deletions, reviews, comments
 
-    if team: df = df[df["author"].isin(team.split(','))]
+    if team:
+        df = df[df["author"].isin(team.split(","))]
+
     # --- PR metrics ---
+    # code_leverage = log1p(additions + deletions) * log1p(files_changed)
     df["code_leverage"] = np.log1p(df["additions"] + df["deletions"]) * np.log1p(df["files_changed"])
-    df["review_influence"] = df["reviews"] * 1.5
-    df["impact_pr"] = 0.7 * df["code_leverage"] + 0.3 * df["review_influence"]
-    df["visibility_pr"] = df["review_influence"] + 0.5 * df["comments"]
+
+    # review influence
+    df["review_influence"] = df["reviews"] * REVIEW_INFLUENCE_MULTIPLIER
+
+    # impact_pr = weighted sum of code_leverage and review_influence
+    df["impact_pr"] = (
+        IMPACT_PR_WEIGHT_CODE_LEVERAGE * df["code_leverage"] +
+        IMPACT_PR_WEIGHT_REVIEW_INFLUENCE * df["review_influence"]
+    )
+
+    # visibility_pr = reviews + 0.5 * comments (weights pulled out)
+    df["visibility_pr"] = (
+        VISIBILITY_PR_WEIGHT_REVIEW * df["review_influence"] +
+        VISIBILITY_PR_WEIGHT_COMMENTS * df["comments"]
+    )
 
     # --- Slack metrics ---
-    df["decision_proxy"] = (df["reviews"] >= 2).astype(int)
-    df["unblock_proxy"] = ((df["files_changed"] <= 5) & (df["deletions"] > df["additions"])).astype(int)
-    df["ownership_proxy"] = (df["files_changed"] >= 10).astype(int)
-    df["impact_slack"] = 0.5 * df["unblock_proxy"] + 0.3 * df["ownership_proxy"]
-    df["visibility_slack"] = 0.7 * df["decision_proxy"] + 0.3 * df["comments"]
+    df["decision_proxy"] = (df["reviews"] >= REVIEWS_DECISION_PROXY_THRESHOLD).astype(int)
+    df["unblock_proxy"] = (
+        (df["files_changed"] <= UNBLOCK_FILES_CHANGED_MAX) &
+        (df["deletions"] > df["additions"])
+    ).astype(int)
+    df["ownership_proxy"] = (df["files_changed"] >= OWNERSHIP_FILES_CHANGED_THRESHOLD).astype(int)
+
+    df["impact_slack"] = (
+        IMPACT_SLACK_WEIGHT_UNBLOCK * df["unblock_proxy"] +
+        IMPACT_SLACK_WEIGHT_OWNERSHIP * df["ownership_proxy"]
+    )
+    df["visibility_slack"] = (
+        VISIBILITY_SLACK_WEIGHT_DECISION * df["decision_proxy"] +
+        VISIBILITY_SLACK_WEIGHT_COMMENTS * df["comments"]
+    )
 
     # --- Aggregate per author ---
     scores = df.groupby("author", as_index=False).agg({
@@ -63,25 +92,28 @@ def calculate_scores(team:str=None):
     # --- Combined metrics ---
     scores["impact_combined"] = scores["impact_pr"] + scores["impact_slack"]
     scores["visibility_combined"] = scores["visibility_pr"] + scores["visibility_slack"]
+
     # --- Execution / total / percentile ---
     scores["execution"] = np.log1p(scores["additions"] + scores["deletions"]) + scores["files_changed"]
+
     scores["total"] = (
-        0.5 * scores["execution"] +
-        0.4 * scores["impact_combined"] +
-        0.1 * scores["visibility_combined"]
+        TOTAL_WEIGHT_EXECUTION * scores["execution"] +
+        TOTAL_WEIGHT_IMPACT_COMBINED * scores["impact_combined"] +
+        TOTAL_WEIGHT_VISIBILITY_COMBINED * scores["visibility_combined"]
     )
-    scores["percentile"] = scores["total"].rank(pct=True) * 100
+
+    scores["percentile"] = scores["total"].rank(pct=True) * PERCENTILE_SCALE
 
     # --- Silent architect ---
-    impact_75 = scores["impact_combined"].quantile(0.75)
-    vis_40 = scores["visibility_combined"].quantile(0.4)
+    impact_75 = scores["impact_combined"].quantile(SILENT_ARCHITECT_IMPACT_QUANTILE)
+    vis_40 = scores["visibility_combined"].quantile(SILENT_ARCHITECT_VISIBILITY_QUANTILE)
     scores["silent_architect"] = (
         (scores["impact_combined"] >= impact_75) &
         (scores["visibility_combined"] <= vis_40)
     )
 
-    impact_50 = scores["impact_combined"].quantile(0.5)
-    vis_75 = scores["visibility_combined"].quantile(0.75)
+    impact_50 = scores["impact_combined"].quantile(LOUD_EXECUTOR_IMPACT_QUANTILE)
+    vis_75 = scores["visibility_combined"].quantile(LOUD_EXECUTOR_VISIBILITY_QUANTILE)
     scores["loud_executor"] = (
         (scores["impact_combined"] <= impact_50) &
         (scores["visibility_combined"] >= vis_75)
@@ -102,6 +134,7 @@ def calculate_scores(team:str=None):
 
     scores["improvement_suggestions"] = scores.apply(simple_suggestion, axis=1)
     return scores
+
 
 # -----------------------
 # Write to PostgreSQL
